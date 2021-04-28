@@ -37,7 +37,6 @@ export default class FaqBot {
   }
 
   private onMessage(message: Discord.Message) {
-    console.log("test");
     if (
       message.channel.type != "dm" ||
       !this.client.user ||
@@ -66,7 +65,7 @@ export default class FaqBot {
     } else if (msgContent == "!help") {
       this.helpCommand(message);
     } else {
-      let bestMatches = new BestMatches(this.articles, message.content);
+      let bestMatches = new BestMatches(this.articles, msgContent);
 
       if (bestMatches.exactMatch) {
         this.sendAnswer(message, bestMatches.exactMatch);

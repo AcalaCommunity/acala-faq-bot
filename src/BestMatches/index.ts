@@ -17,8 +17,8 @@ export default class BestMatches {
       : question;
 
     for (let i = 0; i < articles.length; i++) {
-      let articleQuestion = articles[i].question.toLocaleLowerCase();
-      articleQuestion = articleQuestion.charAt(question.length - 1) === "?"
+      let articleQuestion = articles[i].question.toLocaleLowerCase().trim();
+      articleQuestion = articleQuestion.charAt(articleQuestion.length - 1) === "?"
         ? articleQuestion.slice(0, articleQuestion.length - 1)
         : articleQuestion;
 
@@ -46,6 +46,9 @@ export default class BestMatches {
       "the",
       "that",
       "how",
+      "an",
+      "to",
+      "my"
     ];
 
     let hits = 0;
