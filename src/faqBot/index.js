@@ -1,33 +1,49 @@
 const Discord = require("discord.js");
-const getSimilarity = require("./cosineSimilarity");
-const questions = require("./questions/questions.json");
+const getArticles = require("./getArticles");
+
+let questions;
 
 const client = new Discord.Client();
 
 const highlightColor = 0xfe9073;
 
-function insertMatch(matches, newMatch) {
-  if (matches.length < 5) {
-    matches.push(newMatch);
-    matches.sort((a, b) => {
-      return b.similarity - a.similarity;
-    });
+function getSimilarity(question, questionAsked) {
+  const ignore = ["when", "what", "do", "how", "is", "i", "the", "that", "how"];
+  let matches = 0;
 
-    return matches;
-  }
+  const askedSet = new Set(questionAsked.split(" "));
+  const questionSplit = question.split(" ");
 
-  for (let i in matches) {
-    if (matches[i].similarity <= newMatch.similarity) {
-      matches = matches.splice(i, 0, newMatch);
-      break;
+  for (const word of askedSet) {
+    for (const j of questionSplit) {
+      if (ignore.includes(j)) {
+        continue;
+      } else if (j == word) {
+        matches++;
+      }
     }
   }
 
-  if (matches.length > 5) {
-    return matches.slice(0, 5);
+  return matches;
+}
+
+function insertMatch(matches, newMatch) {
+  if (matches.length < 5) {
+    matches.push(newMatch);
   } else {
-    return matches;
+    for (let i in matches) {
+      if (matches[i].similarity <= newMatch.similarity) {
+        matches.push(newMatch);
+        break;
+      }
+    }
   }
+
+  return matches
+    .sort((a, b) => {
+      return b.similarity - a.similarity;
+    })
+    .slice(0, 5);
 }
 
 function sendAnswer(message, question) {
@@ -132,7 +148,8 @@ client.on("message", (message) => {
   }
 });
 
-function start(token) {
+async function start(token) {
+  questions = await getArticles();
   client.login(token);
 }
 

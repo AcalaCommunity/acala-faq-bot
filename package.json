@@ -4,10 +4,11 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "git:update-index": "git update-index --skip-worktree config.json",
     "start": "node src/index.js"
   },
   "dependencies": {
-    "discord.js": "^12.5.1"
+    "axios": "^0.21.1",
+    "discord.js": "^12.5.1",
+    "turndown": "^7.0.0"
   }
 }

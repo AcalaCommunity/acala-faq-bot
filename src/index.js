@@ -1,4 +1,8 @@
 const start = require("./faqBot");
-const { token } = require("../config.json");
 
-start(token);
+if (!process.env.TOKEN) {
+  console.log("No token set");
+  process.exit(1);
+} else {
+  start(process.env.TOKEN);
+}
