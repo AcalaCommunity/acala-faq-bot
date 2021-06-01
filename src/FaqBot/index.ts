@@ -38,7 +38,7 @@ export default class FaqBot {
 
   private onMessage(message: Discord.Message) {
     if (
-      message.channel.type != "dm" ||
+      !this.channels.includes(message.channel.id) ||
       !this.client.user ||
       message.author.id == this.client.user!.id
     ) {
