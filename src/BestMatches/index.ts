@@ -1,5 +1,7 @@
 import { Article } from "../FaqBot/getArticles";
 
+const MAX_MATCHES = 10;
+
 interface Match {
   similarity: number;
   questionNumber: number;
@@ -12,15 +14,17 @@ export default class BestMatches {
 
   constructor(articles: Article[], question: string) {
     question = question.toLocaleLowerCase();
-    question = question.charAt(question.length - 1) === "?"
-      ? question.slice(0, question.length - 1)
-      : question;
+    question =
+      question.charAt(question.length - 1) === "?"
+        ? question.slice(0, question.length - 1)
+        : question;
 
     for (let i = 0; i < articles.length; i++) {
       let articleQuestion = articles[i].question.toLocaleLowerCase().trim();
-      articleQuestion = articleQuestion.charAt(articleQuestion.length - 1) === "?"
-        ? articleQuestion.slice(0, articleQuestion.length - 1)
-        : articleQuestion;
+      articleQuestion =
+        articleQuestion.charAt(articleQuestion.length - 1) === "?"
+          ? articleQuestion.slice(0, articleQuestion.length - 1)
+          : articleQuestion;
 
       if (question === articleQuestion) {
         this.exactMatch = articles[i];
@@ -29,9 +33,13 @@ export default class BestMatches {
         this.insertMatch({
           similarity: this.getSimilarity(articleQuestion, question),
           questionNumber: i,
-          article: articles[i]
+          article: articles[i],
         });
       }
+    }
+
+    for (let i = 0; i < this.matches.length; i++) {
+      this.matches[i].questionNumber = i;
     }
   }
 
@@ -48,10 +56,13 @@ export default class BestMatches {
       "how",
       "an",
       "to",
-      "my"
+      "my",
+      "can",
+      "a",
+      "to",
     ];
 
-    let hits = 0;
+    let hits: Set<string> = new Set();
 
     const userSet = new Set(userQuestion.split(" "));
     const articleSplit = articleQuestion.split(" ").map((word) => {
@@ -63,18 +74,18 @@ export default class BestMatches {
         if (ignore.includes(j)) {
           continue;
         } else if (j == word) {
-          hits++;
+          hits.add(word);
         }
       }
     }
 
-    return hits;
+    return hits.size;
   }
 
   public insertMatch(newMatch: Match) {
     if (newMatch.similarity == 0) {
       return;
-    } else if (this.matches.length < 5) {
+    } else if (this.matches.length < MAX_MATCHES) {
       this.matches.push(newMatch);
     } else {
       for (let i in this.matches) {
@@ -89,6 +100,6 @@ export default class BestMatches {
       .sort((a, b) => {
         return b.similarity - a.similarity;
       })
-      .slice(0, 5);
+      .slice(0, MAX_MATCHES);
   }
 }

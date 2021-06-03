@@ -3,16 +3,24 @@ import { Article, getArticles } from "./getArticles";
 import BestMatches from "../BestMatches";
 
 export default class FaqBot {
-  private sections: number[];
-  private channels: string[];
+  private refreshTime = 300000;
+  private urls: string[];
+  private articles!: Article[] | null;
   private client: Discord.Client;
-  private articles!: Article[];
   private highlightColor = 0xfe9073;
+  private errorCorlor = 0xff0000;
+  private userQuestions: Map<string, BestMatches> = new Map();
 
-  constructor(sections: number[], channels: string[]) {
-    this.sections = sections;
-    this.channels = channels;
+  constructor(urls: string[]) {
+    this.urls = urls;
     this.client = new Discord.Client();
+    this.loadArticles();
+  }
+
+  private async loadArticles() {
+    this.articles = await getArticles(this.urls);
+
+    setTimeout(() => this.loadArticles(), this.refreshTime);
   }
 
   private sendAnswer(message: Discord.Message, article: Article) {
@@ -23,6 +31,24 @@ export default class FaqBot {
     article.url ? answer.setURL(article.url) : null;
 
     message.reply(answer);
+  }
+
+  private sendError(message: Discord.Message, errorMessage: string) {
+    const response = new Discord.MessageEmbed();
+    response.setTitle("**Something went wrong**");
+    response.setDescription(errorMessage);
+    response.setColor(this.errorCorlor);
+
+    message.reply(response);
+  }
+
+  private noAnswerFound(message: Discord.Message) {
+    const response = new Discord.MessageEmbed();
+    response.setTitle("**Question not found**");
+    response.setDescription("No question was found matching that number.\n");
+    response.setColor(this.highlightColor);
+
+    message.reply(response);
   }
 
   private helpCommand(message: Discord.Message) {
@@ -36,35 +62,44 @@ export default class FaqBot {
     message.reply(response);
   }
 
-  private onMessage(message: Discord.Message) {
-    if (
-      !this.channels.includes(message.channel.id) ||
-      !this.client.user ||
-      message.author.id == this.client.user!.id
-    ) {
-      return;
-    }
+  private questionByNumber(message: Discord.Message) {
+    const messageContent = message.content.trim();
+    const userQuestions = this.userQuestions.get(message.author.id);
+    const questionNumber = parseInt(messageContent);
 
-    let msgContent = message.content.trim();
-
-    let numberPattern = /\d+/;
-
-    if (numberPattern.test(msgContent)) {
-      const article = this.articles[parseInt(message.content.trim())];
-
-      if (article) {
-        this.sendAnswer(message, article);
-      } else {
-        const response = new Discord.MessageEmbed();
-        response.setTitle("**Question not found**");
-        response.setDescription("No question was found matching that number.");
-        response.setColor(this.highlightColor);
-
-        message.reply(response);
+    if (userQuestions) {
+      if (
+        questionNumber > userQuestions.matches.length - 1 ||
+        questionNumber < 0
+      ) {
+        this.noAnswerFound(message);
+      } else if (userQuestions.matches[questionNumber]) {
+        this.sendAnswer(
+          message,
+          userQuestions.matches[parseInt(messageContent)].article
+        );
       }
-    } else if (msgContent == "!help") {
-      this.helpCommand(message);
     } else {
+      const response = new Discord.MessageEmbed();
+      response.setTitle(
+        "**Could not retrieve previously suggested questions**"
+      );
+      response.setDescription(
+        "I could not retrieve your previously suggested questions. Please asking your original question again."
+      );
+      response.setColor(this.highlightColor);
+      message.reply(response);
+    }
+  }
+
+  private async answerQuestion(message: Discord.Message) {
+    if (this.articles == null) {
+      this.sendError(
+        message,
+        "An error occured while retrieving an answer to your question, please try again later"
+      );
+    } else {
+      let msgContent = message.content.trim();
       let bestMatches = new BestMatches(this.articles, msgContent);
 
       if (bestMatches.exactMatch) {
@@ -79,6 +114,7 @@ export default class FaqBot {
 
         message.reply(response);
       } else {
+        this.userQuestions.set(message.author.id, bestMatches);
         let description = "";
 
         for (let match of bestMatches.matches) {
@@ -86,7 +122,7 @@ export default class FaqBot {
         }
 
         description +=
-          "\n**Type the number of the question you'd like answered.**";
+          "\n**Type the number of the question you'd like answered.**\nCant find what you're looking for? Check our [Wiki](https://wiki.acala.network/)";
 
         const response = new Discord.MessageEmbed();
         response.setTitle(`**Did you mean:**`);
@@ -98,8 +134,43 @@ export default class FaqBot {
     }
   }
 
+  private onMessage(message: Discord.Message) {
+    if (
+      message.channel.type != "dm" ||
+      message.author.id === this.client.user!.id
+    ) {
+      return;
+    }
+
+    let numberPattern = /\s*\d+\s*/;
+    let helpCommandPattern = /\s*!help\s*/;
+
+    if (helpCommandPattern.test(message.content)) {
+      this.helpCommand(message);
+    } else if (numberPattern.test(message.content)) {
+      this.questionByNumber(message);
+    } else {
+      this.answerQuestion(message);
+    }
+  }
+
   public async login(token: string) {
-    this.articles = await getArticles(this.sections);
+    this.client.on("guildMemberAdd", async (newMember) => {
+      console.log("added");
+      const response = new Discord.MessageEmbed();
+      response.setTitle(`**Welcome ${newMember}!**`);
+      response.setDescription(
+        `Welcome to the Acala Discord Server! Have any questions? Feel free to ask me and I'll do my best to answer them!`
+      );
+      response.setColor(this.highlightColor);
+
+      try {
+        const dmChannel = await newMember.createDM();
+        dmChannel.send(response);
+      } catch (error) {
+        console.log(error);
+      }
+    });
 
     this.client.on("message", (message) => this.onMessage(message));
 
