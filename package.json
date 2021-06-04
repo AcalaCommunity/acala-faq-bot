@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "start": "tsc; node build/index.js"
+    "start": "tsc; node build/index.js",
+    "heroku-postbuild": "yarn start"
   },
   "dependencies": {
     "axios": "^0.21.1",
