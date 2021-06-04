@@ -2,6 +2,24 @@ import { Article } from "../FaqBot/getArticles";
 
 const MAX_MATCHES = 10;
 
+const IGNORE = [
+  "when",
+  "what",
+  "do",
+  "how",
+  "is",
+  "i",
+  "the",
+  "that",
+  "how",
+  "an",
+  "to",
+  "my",
+  "can",
+  "a",
+  "to",
+];
+
 interface Match {
   similarity: number;
   questionNumber: number;
@@ -44,24 +62,6 @@ export default class BestMatches {
   }
 
   private getSimilarity(articleQuestion: string, userQuestion: string) {
-    const ignore = [
-      "when",
-      "what",
-      "do",
-      "how",
-      "is",
-      "i",
-      "the",
-      "that",
-      "how",
-      "an",
-      "to",
-      "my",
-      "can",
-      "a",
-      "to",
-    ];
-
     let hits: Set<string> = new Set();
 
     const userSet = new Set(userQuestion.split(" "));
@@ -71,7 +71,7 @@ export default class BestMatches {
 
     for (const word of userSet) {
       for (const j of articleSplit) {
-        if (ignore.includes(j)) {
+        if (IGNORE.includes(j)) {
           continue;
         } else if (j == word) {
           hits.add(word);

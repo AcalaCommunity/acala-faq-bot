@@ -22,13 +22,12 @@ export default class FaqBot {
   private userQuestions: Map<string, UserQuestion> = new Map();
   private sheet: Sheet;
 
-  constructor(urls: string[], sheetsCredentialPath: string) {
+  constructor(urls: string[], clientEmail: string, privateKey: string) {
     this.urls = urls;
     this.client = new Discord.Client();
     this.loadArticles();
 
-    const credentials: string = fs.readFileSync(sheetsCredentialPath, "utf-8");
-    this.sheet = new Sheet(credentials);
+    this.sheet = new Sheet(clientEmail, privateKey);
   }
 
   private async loadArticles() {

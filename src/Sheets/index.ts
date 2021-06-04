@@ -13,19 +13,19 @@ export interface UserFeedback {
 export default class Sheet {
   protected active = false;
   private jwt!: JWT;
-  constructor(credentials: string) {
-    this.connect(credentials);
+  constructor(clientEmail: string, privateKey: string) {
+    this.connect(clientEmail, privateKey);
   }
 
-  private connect(credentials: string) {
-    const { client_email, private_key } = JSON.parse(credentials);
-
+  private connect(clientEmail: string, privateKey: string) {
+    const formattedPrivateKey = privateKey.split("\\n").join("\n");
     const jwtClient = new google.auth.JWT(
-      client_email,
+      clientEmail,
       undefined,
-      private_key,
+      formattedPrivateKey,
       SCOPES
     );
+
     jwtClient.authorize((err, tokens) => {
       if (err) {
         console.log(err);
