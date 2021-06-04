@@ -1,6 +1,16 @@
 import * as Discord from "discord.js";
+import * as fs from "fs";
 import { Article, getArticles } from "./getArticles";
 import BestMatches from "../BestMatches";
+import Sheet, { UserFeedback } from "../Sheets";
+import { UserInfo } from "node:os";
+
+interface UserQuestion {
+  question: string;
+  answer?: string;
+  bestMatches?: BestMatches;
+  waiting?: boolean;
+}
 
 export default class FaqBot {
   private refreshTime = 300000;
@@ -9,12 +19,16 @@ export default class FaqBot {
   private client: Discord.Client;
   private highlightColor = 0xfe9073;
   private errorCorlor = 0xff0000;
-  private userQuestions: Map<string, BestMatches> = new Map();
+  private userQuestions: Map<string, UserQuestion> = new Map();
+  private sheet: Sheet;
 
-  constructor(urls: string[]) {
+  constructor(urls: string[], sheetsCredentialPath: string) {
     this.urls = urls;
     this.client = new Discord.Client();
     this.loadArticles();
+
+    const credentials: string = fs.readFileSync(sheetsCredentialPath, "utf-8");
+    this.sheet = new Sheet(credentials);
   }
 
   private async loadArticles() {
@@ -31,6 +45,14 @@ export default class FaqBot {
     article.url ? answer.setURL(article.url) : null;
 
     message.reply(answer);
+
+    if (this.userQuestions.has(message.author.id)) {
+      let userQuestion = this.userQuestions.get(message.author.id)!;
+      userQuestion.answer = article.answer;
+      this.userQuestions.set(message.author.id, userQuestion);
+    }
+
+    this.getFeedback(message);
   }
 
   private sendError(message: Discord.Message, errorMessage: string) {
@@ -62,9 +84,28 @@ export default class FaqBot {
     message.reply(response);
   }
 
+  private getFeedback(message: Discord.Message) {
+    const response = new Discord.MessageEmbed();
+    response.setTitle("**Was this answer helpful?**");
+    response.setDescription(
+      "Type yes if this answer was helpful or no if it was not."
+    );
+    response.setColor(this.highlightColor);
+
+    if (this.userQuestions.has(message.author.id)) {
+      let userQuestion = this.userQuestions.get(message.author.id)!;
+      userQuestion.waiting = true;
+      this.userQuestions.set(message.author.id, userQuestion);
+    }
+
+    message.reply(response);
+  }
+
   private questionByNumber(message: Discord.Message) {
     const messageContent = message.content.trim();
-    const userQuestions = this.userQuestions.get(message.author.id);
+    const userQuestions = this.userQuestions.get(
+      message.author.id
+    )?.bestMatches;
     const questionNumber = parseInt(messageContent);
 
     if (userQuestions) {
@@ -82,7 +123,7 @@ export default class FaqBot {
     } else {
       const response = new Discord.MessageEmbed();
       response.setTitle(
-        "**Could not retrieve previously suggested questions**"
+        "**Could not retrieve previously suggested questions.**"
       );
       response.setDescription(
         "I could not retrieve your previously suggested questions. Please asking your original question again."
@@ -103,6 +144,9 @@ export default class FaqBot {
       let bestMatches = new BestMatches(this.articles, msgContent);
 
       if (bestMatches.exactMatch) {
+        this.userQuestions.set(message.author.id, {
+          question: msgContent,
+        });
         this.sendAnswer(message, bestMatches.exactMatch);
       } else if (bestMatches.matches.length == 0) {
         const response = new Discord.MessageEmbed();
@@ -114,7 +158,10 @@ export default class FaqBot {
 
         message.reply(response);
       } else {
-        this.userQuestions.set(message.author.id, bestMatches);
+        this.userQuestions.set(message.author.id, {
+          question: msgContent,
+          bestMatches: bestMatches,
+        });
         let description = "";
 
         for (let match of bestMatches.matches) {
@@ -145,6 +192,39 @@ export default class FaqBot {
     let numberPattern = /\s*\d+\s*/;
     let helpCommandPattern = /\s*!help\s*/;
 
+    const messageContent = message.content.trim().toLowerCase();
+    if (messageContent === "yes" || messageContent === "no") {
+      if (this.userQuestions.has(message.author.id)) {
+        let userQuestion = this.userQuestions.get(message.author.id)!;
+        if (userQuestion.waiting) {
+          const userFeedback: UserFeedback = {
+            id: message.author.id,
+            question: userQuestion.question,
+            answer: userQuestion.answer!,
+            helpful: messageContent === "yes" ? true : false,
+          };
+
+          this.sheet.updateSheet(userFeedback);
+          userQuestion.waiting = false;
+          this.userQuestions.set(message.author.id, userQuestion);
+
+          if (messageContent === "yes") {
+            message.react("🎉");
+          } else {
+            const response = new Discord.MessageEmbed();
+            response.setTitle("Sorry about that!");
+            response.setDescription(
+              "Your feedback will be used to improve our FAQ, thanks!"
+            );
+            response.setColor(this.highlightColor);
+
+            message.reply(response);
+          }
+          return;
+        }
+      }
+    }
+
     if (helpCommandPattern.test(message.content)) {
       this.helpCommand(message);
     } else if (numberPattern.test(message.content)) {
@@ -156,11 +236,10 @@ export default class FaqBot {
 
   public async login(token: string) {
     this.client.on("guildMemberAdd", async (newMember) => {
-      console.log("added");
       const response = new Discord.MessageEmbed();
       response.setTitle(`**Welcome ${newMember}!**`);
       response.setDescription(
-        `Welcome to the Acala Discord Server! Have any questions? Feel free to ask me and I'll do my best to answer them!`
+        `Welcome to the Acala Discord Server! Have any questions about the Karura crowdloan? Feel free to ask me and I'll do my best to answer them!`
       );
       response.setColor(this.highlightColor);
 

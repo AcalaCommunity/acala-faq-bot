@@ -6,7 +6,7 @@ if (!process.env.TOKEN) {
 } else {
   const faqBot = new FaqBot([
     "https://raw.githubusercontent.com/AcalaNetwork/acala-wiki/master/karura/crowdloan/faq.md",
-  ]);
+  ], "./credentials.json");
 
   faqBot.login(process.env.TOKEN);
 }
