@@ -166,7 +166,7 @@ export default class FaqBot {
         }
 
         description +=
-          "\n**Type the number of the question you'd like answered.**\nCant find what you're looking for? Check our [Wiki](https://wiki.acala.network/)";
+          "\n**Type the number of the question you'd like answered.**\nCant find what you're looking for? Check our [Wiki](https://wiki.acala.network/karura/crowdloan/faq)";
 
         const response = new Discord.MessageEmbed();
         response.setTitle(`**Did you mean:**`);
