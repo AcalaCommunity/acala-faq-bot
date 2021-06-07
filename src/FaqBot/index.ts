@@ -87,7 +87,7 @@ export default class FaqBot {
     const response = new Discord.MessageEmbed();
     response.setTitle("**Was this answer helpful?**");
     response.setDescription(
-      "Type yes if this answer was helpful or no if it was not."
+      "Yes/No"
     );
     response.setColor(this.highlightColor);
 
