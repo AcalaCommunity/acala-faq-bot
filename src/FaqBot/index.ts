@@ -149,7 +149,7 @@ export default class FaqBot {
         const response = new Discord.MessageEmbed();
         response.setTitle(`**Couldn't find a match**`);
         response.setDescription(
-          "Sorry, we couldn't find a match for your question"
+          "Sorry, we couldn't find a match for your question.\n Try asking a different question or check out our [Wiki](https://wiki.acala.network/karura/crowdloan/faq)."
         );
         response.setColor(this.highlightColor);
 
