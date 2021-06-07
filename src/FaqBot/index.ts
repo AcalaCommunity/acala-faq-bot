@@ -86,9 +86,7 @@ export default class FaqBot {
   private getFeedback(message: Discord.Message) {
     const response = new Discord.MessageEmbed();
     response.setTitle("**Was this answer helpful?**");
-    response.setDescription(
-      "Yes/No"
-    );
+    response.setDescription("Yes/No");
     response.setColor(this.highlightColor);
 
     if (this.userQuestions.has(message.author.id)) {
@@ -222,6 +220,19 @@ export default class FaqBot {
           return;
         }
       }
+    }
+
+    const userQuestion = this.userQuestions.get(message.author.id);
+
+    if (userQuestion && userQuestion.answer) {
+      const userFeedback: UserFeedback = {
+        id: message.author.id,
+        question: userQuestion.question,
+        answer: userQuestion.answer!,
+      };
+
+      this.sheet.updateSheet(userFeedback);
+      this.userQuestions.delete(message.author.id);
     }
 
     if (helpCommandPattern.test(message.content)) {

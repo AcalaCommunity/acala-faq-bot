@@ -7,7 +7,7 @@ export interface UserFeedback {
   id: string;
   question: string;
   answer: string;
-  helpful: boolean;
+  helpful?: boolean;
 }
 
 export default class Sheet {
@@ -38,6 +38,12 @@ export default class Sheet {
 
   public updateSheet(userResponse: UserFeedback): boolean {
     if (!this.active) return false;
+
+    let helpful: string = "N/A";
+
+    if (userResponse.helpful != undefined) {
+      helpful = userResponse.helpful ? "yes" : "no";
+    }
 
     let sheets = google.sheets("v4");
     const spreadsheetId = "1aeGceDWV2ognX5tTLLSp9ywqKJP5fDGMj5GyGZDQvRU";
@@ -77,7 +83,7 @@ export default class Sheet {
               },
               {
                 userEnteredValue: {
-                  stringValue: userResponse.helpful ? "yes" : "no",
+                  stringValue: helpful,
                 },
               },
             ],
