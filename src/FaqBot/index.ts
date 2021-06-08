@@ -267,6 +267,8 @@ export default class FaqBot {
       console.log(
         `Logged in as ${this.client.user?.username}#${this.client.user?.discriminator}`
       );
+
+      this.client.user?.setActivity("DM me crowdloan questions!", { type: "PLAYING" });
     });
 
     this.client.login(token);
