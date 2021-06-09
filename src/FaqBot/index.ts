@@ -69,8 +69,6 @@ export default class FaqBot {
     response.setDescription("No question was found matching that number.\n");
     response.setColor(this.highlightColor);
 
-    this.sheet.updateNoMatchSheet(message.author.id, message.content);
-
     message.reply(response);
   }
 
@@ -155,6 +153,8 @@ export default class FaqBot {
         );
         response.setColor(this.highlightColor);
 
+        this.sheet.updateNoMatchSheet(message.author.id, message.content);
+        
         message.reply(response);
       } else {
         this.userQuestions.set(message.author.id, {
