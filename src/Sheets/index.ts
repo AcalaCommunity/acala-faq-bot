@@ -108,13 +108,13 @@ export default class Sheet {
     if (!this.active) return false;
 
     let sheets = google.sheets("v4");
-    const spreadsheetId = "1aeGceDWV2ognX5tTLLSp9ywqKJP5fDGMj5GyGZDQvRU";
+    const spreadsheetId = "1nznhzMEf44CoIUJ2YqX6EsBOrgsX19_H2LS0q4Tsp8Y";
 
     let currentDate = new Date();
     const requests = [];
     requests.push({
       appendCells: {
-        sheetId: 1,
+        sheetId: 0,
         rows: [
           {
             values: [
