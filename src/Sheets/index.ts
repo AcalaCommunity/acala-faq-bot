@@ -103,4 +103,56 @@ export default class Sheet {
 
     return true;
   }
+
+  public updateNoMatchSheet(userId: string, question: string) {
+    if (!this.active) return false;
+
+    let sheets = google.sheets("v4");
+    const spreadsheetId = "1aeGceDWV2ognX5tTLLSp9ywqKJP5fDGMj5GyGZDQvRU";
+
+    let currentDate = new Date();
+    const requests = [];
+    requests.push({
+      appendCells: {
+        sheetId: 1492661266,
+        rows: [
+          {
+            values: [
+              {
+                userEnteredValue: {
+                  stringValue: `${currentDate.getDate()}/${currentDate.getMonth()}/${currentDate
+                    .getFullYear()
+                    .toString()
+                    .slice(2)} ${
+                    currentDate.getHours()
+                  }:${currentDate.getMinutes()}`,
+                },
+              },
+              {
+                userEnteredValue: {
+                  stringValue: userId,
+                },
+              },
+              {
+                userEnteredValue: {
+                  stringValue: question,
+                },
+              },
+            ],
+          },
+        ],
+        fields: "*",
+      },
+    });
+
+    sheets.spreadsheets.batchUpdate({
+      spreadsheetId: spreadsheetId,
+      auth: this.jwt,
+      requestBody: {
+        requests: requests,
+      },
+    });
+
+    return true;
+  }
 }
