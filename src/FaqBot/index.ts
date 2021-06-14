@@ -257,7 +257,7 @@ export default class FaqBot {
 
       try {
         const dmChannel = await newMember.createDM();
-        dmChannel.send(response);
+        dmChannel.send(response).catch((error) => console.log(error));
       } catch (error) {
         console.log(error);
       }
